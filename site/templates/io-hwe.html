@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OtherAngle</title>
+</head>
+<body>
+
+    <!-- <div class="formSet"></div> -->
+    <h1 class="title">テーマ</h1>
+    
+    <form class="form" action="{{ url_for('setForm') }}" onsubmit="setLoading()">
+        <div>
+            <label for="theme"></label>
+            <input type="text" name="theme" class="theme" value="{{ theme_input }}"/>
+        </div>
+        <div>
+            <input type="submit" class="theme_button" value="出力" />
+        </div>    
+    </form>
+    <!-- <a href="/request/aaa">aaa</a> -->
+    <div class="Advices" id="Advices">
+        <div class="seePoint">
+            <h3 class="viewPoint">{{ content_dict.view1 }}</h3>
+            <p>{{ content_dict.content1 }}</p>
+        </div>
+        <div class="seePoint">
+            <h3 class="viewPoint">{{ content_dict.view2 }}</h3>
+            <p class="content">{{ content_dict.content2 }}</p>
+        </div>
+        <div class="seePoint">
+            <h3 class="viewPoint">{{ content_dict.view3 }}</h3>
+            <p class="content">{{ content_dict.content3 }}</p>
+        </div>
+    </div>
+
+
+    <style>
+        h1{
+            text-align: center;
+            font-size: 30px;
+        }
+        .form{
+            text-align: center;
+        }
+
+        .theme{
+            padding-bottom: 10px;
+            width: 100%;
+            height: 100px;
+            font-size: 80px;
+            border: none;
+
+            text-align: center;
+            outline:none
+        }
+
+        .Advices{
+            display: flex;
+        }
+        .seePoint{
+            width: 33%;
+            text-align: center;
+            margin-left: 10px;
+            margin-right: 10px;
+        }
+        h3.viewPoint{
+            font-size: 40px;
+            margin-top: 10px;
+            margin-bottom: 1px;
+        }
+        .theme_button{
+            background-color: white;
+            color: brown;
+            width: 120px;
+            height: 50px;
+            font-size: 30px;
+            border-radius: 45%;
+        }
+
+        .loader {
+            border: 16px solid #f3f3f3; /* Light grey */
+            border-top: 16px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+    </style>
+
+    <script>
+
+        const advices = document.getElementById("Advices");
+        
+        const advices_texts = ["科学的","倫理","Core"];
+        const seePoint_texts = ["科学的には、生存競争で生きて繁殖できた生命体がいきそれ以外は消滅していると推測されています　　　　　　　1.勉強の価値\nあああああああ",
+                                "ご飯が好きである",
+                                "我輩は生きている"];
+    
+        //観点の追加
+        function AddSeePoint(seePoint,advice)
+        {
+            var seeP_constion = document.createElement("div");
+            seeP_constion.setAttribute("class","seePoint");
+                var seeP_text = document.createElement("h3");
+                seeP_text.setAttribute("class","viewPoint");
+                seeP_text.textContent = seePoint;
+                seeP_constion.appendChild(seeP_text);
+
+                var advice_text = document.createElement("p");
+                advice_text.setAttribute("class","advice");
+                advice_text.textContent = advice;
+                seeP_constion.appendChild(advice_text);
+            advices.appendChild(seeP_constion);
+        }
+
+        
+
+        // for (let i = 0; i < advices_texts.length; i++)
+        // {
+        //     console.log(i);
+        //     AddSeePoint(advices_texts[i],seePoint_texts[i]);
+        // }
+        // let a =AddSeePoint("hon","ほん");
+
+        //advice_content
+        
+        let viewPoint_tests = document.getElementsByClassName("viewPoint");
+        let advice_tests = document.getElementsByClassName("advice");
+        const seePoints = ["科学的","歴史","社会","経済","国語","古典","研究","化学","論理","地理","芸術","音楽","宗教","道徳","商業","福祉","数学","生物","技術","家庭","情報","保険","体育","工業","医学","農業","水産","介護","対照的","ポジティブな","物理的","原理的","表層的","類似","異質","感情的","データから","効率的","効果の","プログラミング的","客観的","史実的(事実ベースの考え方)","権利的","コスパ","独自性",]
+
+        function rd(mix,max)
+        {
+            return Math.random() * (max - mix) + mix
+        }
+
+        function getRandomInt(max) 
+        {
+            return Math.floor(Math.random() * max);
+        }
+
+        function setLoading(){
+            const loader = document.createElement("div");
+            loader.setAttribute("class","loader");
+            loader.textContent = "推論中-1分半程度かかります";
+            document.body.appendChild(loader);
+        }
+
+
+        
+        // function getAdvice(theme,view)
+        // {
+        //     const xhr = new XMLHttpRequest();
+        //     xhr.open("POST",`http://127.0.0.1:8030/theme/${view}?q=${theme}`);
+        //     xhr.send();
+        //     xhr.responseType = "json";
+        //     let data = {"json":"cotens"};
+        //     xhr.onload = () => {
+        //         if(xhr.readyState == 4 && xhr.status == 200){
+        //             data = xhr.response;
+        //         }else{
+        //             console.log(`Error:${xhr.status}`);
+        //         }
+        //     }
+        //     return data;
+        // }
+        // console.log(getAdvice("ahee",89));
+
+        function SetAdvice()
+        {
+            for(let i = 0; i < viewPoint_tests.length; i++) {
+                // console.log(viewPoint_tests.item(i).innerHTML);
+                // console.log(rd(0,seePoints.length-1));
+                viewPoint_tests.item(i).innerHTML = seePoints[getRandomInt(seePoints.length-1)];
+                advice_tests.item(i).innerHTML = getAdvice(theme,i)
+                // console.log(advice_tests.item(i).innerHTML);
+            }
+        }
+
+        
+
+        
+    </script>
+</body>
+</html>
