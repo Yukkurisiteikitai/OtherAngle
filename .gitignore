@@ -1,5 +1,5 @@
-main
-__pycache__
+site/siteOA
+AI/main
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -110,7 +110,7 @@ def Outputs(theme :str):
         generated_ids = model.generate(
             model_inputs.input_ids,
             attention_mask=model_inputs.attention_mask,
-            max_new_tokens=600
+            max_new_tokens=500
         )
 
     # 生成された回答を取得
@@ -153,8 +153,11 @@ def Outputs_custom(input_user :str):
         generated_ids = model.generate(
             model_inputs.input_ids,
             attention_mask=model_inputs.attention_mask,
-            max_new_tokens=300,
-            streamer=streamer
+            max_new_tokens=500,
+            streamer=streamer,
+            temperature=0.4,
+            top_p=0.7,
+            top_k=4
         )
     generated_ids = [
         output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)

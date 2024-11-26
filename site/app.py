@@ -2,6 +2,7 @@ from flask import Flask, request, render_template, redirect,abort
 from urllib.parse import unquote
 from flask_cors import CORS
 import requests
+import time
 
 app = Flask(__name__)
 
@@ -12,11 +13,12 @@ CORS(app, resources={r"/*": {
 }})
 
 
+
 def viewPointMake(theme:str ,content:str):
     # app.make
     return (theme,content)
 
-
+        
 
 reset = ""
 @app.route("/")
@@ -61,10 +63,14 @@ def request_api(type:str,content:str):
     response.raise_for_status()
     return response.json()
 
+
+start_t = time.time()
+end_t = time.time()
 #フォームの取得する部分.
 theme_temp =""
 @app.route("/setForm")
 def setForm():
+    start_t = time.time()
     print("set")
     theme_input = request.args.get('theme')
     theme_temp=theme_input
@@ -83,7 +89,6 @@ def setForm():
 #フォームの入力を実際にリクエストするところ.
 @app.route("/req")
 def noi():
-    global theme_temp
     #取得
     theme_value = request.args.get('t')
 
@@ -114,7 +119,11 @@ def noi():
         'view2':viewPoint[1],
         'view3':viewPoint[2],
     }
-    return render_template("index.html",content_dict=content_dict,theme_input=content_value)
+    # end_t = time.time()
+
+    # print("timeRecord:{:.4f}".format(end_t-start_t))
+
+    return render_template("index.html",content_dict=content_dict,theme_input=content_value)()
 
 #アプリ実行
 if __name__ == "__main__":

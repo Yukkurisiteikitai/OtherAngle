@@ -3,6 +3,13 @@ import IdeaAPI
 import Loadquestion
 import random
 import time
+from fastapi import FastAPI,Request
+from fastapi.middleware.cors import CORSMiddleware
+from typing import Union
+import random
+import csv
+import time
+
 
 
 
@@ -34,50 +41,9 @@ q = ["ファントムセンス",
      "AIは最高に優秀なスキルを持った人間のまがい物であるか",
      "この世の問題すべてに適応できない法則は何か?"]
 
-# SetMode =""
-# while True:
-#     SetMode = input('Choice To Mode[custom/Auto]:')
-#     if SetMode == Mode[0] or SetMode == "c" or SetMode == "" or SetMode == Mode[1] or SetMode == "a":
-#         break
 
-
-
-
-
-# if SetMode == Mode[0] or SetMode == "c" or SetMode == "":
-# #手動テストモー:ド
-#     while True:
-#         IdeaAPI.Reset()
-#         theme = input("theme:")
-#         # theme = themes[rd(len(themes)-1)]
-        
-#         if theme == "exit" or theme == "":
-#             IdeaAPI.PromptSave()
-#             break
-#         elif theme == "systemPrompt" or theme=="sp":
-#             IdeaAPI.SetSystemPrompt()
-#             theme = input("theme:")
-#         elif theme == "savePrompt" or theme=="save":
-#             IdeaAPI.PromptSave()
-#             theme = input("theme:")
-        
-#         # print("回答",IdeaAPI.Outputs(theme))
-        
-#         for i in range(countsSameTheme):
-#             s_t = time.time()
-#             print(generate(theme))
-#             e_t = time.time()
-#             print("time:{:.2f}".format(e_t-s_t))
-
-from fastapi import FastAPI,Request
-from fastapi.middleware.cors import CORSMiddleware
-from typing import Union
-import random
-import csv
-import time
-
+# saberSet
 app = FastAPI()
-
 
 origins = [
     "http://localhost:8000",
@@ -104,6 +70,8 @@ async def add_procss_time_header(request: Request,call_net):
     return response
 
 log_path="log/log.csv"
+
+#LogDatabase todo AWSにログを送信ように変更
 class logData():
     def __init__(self) -> None:    
         # startSet
