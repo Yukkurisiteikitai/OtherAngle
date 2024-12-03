@@ -5,6 +5,7 @@ import random
 import time
 from fastapi import FastAPI,Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from typing import Union
 import random
 import csv
@@ -19,11 +20,15 @@ countsSameTheme=3
 
 def rd(max):
     return random.randint(0,max)
+
+
 def generate(theme):
     viewPoint = seePoints[random.randint(0, len(seePoints) - 1)]
     promptInput = Loadquestion.makeQuestion(viewPoint, theme)
     print(promptInput)
     return IdeaAPI.Outputs_custom(promptInput),viewPoint
+
+
 import csv
 def LoadCSV(path):
 # print(sysPrompt)
@@ -73,35 +78,23 @@ log_path="log/log.csv"
 
 #LogDatabase todo AWSにログを送信ように変更
 class logData():
-    def __init__(self) -> None:    
-        # startSet
-        data_number = []
-        data_string = []
+    # startSet
+    data_number = []
+    data_string = []
 
-        #setting Datas
-        LogLevel = 0
-        time_log = time.time()
-        eventID_log = 39
-        RequestID_log = 2
-        UserCode_log = 809458403 #ipアドレス or UserName
-        DoPoint_log = "fe"
-        ProcessingDetail_log = "feafae"
-        ProcessingResult_log = "fejoifaw;fj"
-        message_log = "message"
+    #setting Datas
+    LogLevel = 0
+    time_log = time.time()
+    eventID_log = 39
+    RequestID_log = 2
+    UserCode_log = 45323412 #ipアドレス or UserName
+    DoPoint_log = ""
+    ProcessingDetail_log = ""
+    ProcessingResult_log = ""
+    message_log = ""
 
-        # data {
-        #     "LogLeven":LogLevel,
-        #     "time":time_log,
-        #     "eventID":eventID_log,
-        #     "RequestID":RequestID_log,
-        #     "UserCode":UserCode_log,
-        #     "DoPoint":DoPoint_log,
-        #     "ProcessingDetail":ProcessingDetail_log,
-        #     "ProcessingResult":ProcessingResult_log,
-        #     "message":message_log
-        # }
 
-        
+    def __init__(self,LogLevel,time_log,eventID_log,RequestID_log,UserCode_log,DoPoint_log,ProcessingDetail_log,ProcessingResult_log,message_log,data_number,data_string):    
         data_number.append(LogLevel)
         data_number.append(RequestID_log)
         data_number.append(eventID_log)
@@ -112,49 +105,58 @@ class logData():
         data_string.append(ProcessingResult_log)
         data_string.append(message_log)
 
+    def setData(self,LogLevel,time_log,eventID_log,RequestID_log,UserCode_log,DoPoint_log,ProcessingDetail_log,ProcessingResult_log,message_log,data_number,data_string):
+        return {
+            "LogLevel":LogLevel,
+            "time_log":time_log,
+            "eventID_log":eventID_log,
+            "RequestID_log":RequestID_log,
+            "UserCode_log":UserCode_log,
+            "DoPoint_log":DoPoint_log,
+            "ProcessingDetail_log":ProcessingDetail_log,
+            "ProcessingResult_log":ProcessingResult_log,
+            "message_log":message_log
+        }
 
 
+
+# def SaveLog(path:str,data:logData):
+#     with open(""):
+
+    
 def save_log(data):
     with open(log_path,"a",encoding="utf-8")as f:
         writer = csv.DictWriter(f, data, extrasaction='ignore')
         writer.writeheader()
         writer.writerows(data)
 
-#toDo  
+
+# toDo  
 @app.get("/hello")
 async def hello():
     return {"content":"helloWorld"}
+
 
 @app.get("/unluck")
 async def unluck():
     return {"ERROR":"unluck"}
 
-#クラス名を取得してから認識する
 
 
-# seePoints = []
-# import csv
-# with open("seePoints.csv","r",encoding="utf-8")as f:
-#     data = csv.reader(f)
-#     seePoints=[i for i in data]
-    
-
-print(seePoints[2][0])
-
-
-#api出力
+# api出力
 @app.get("/inference/type/{type_value}")
-def read_item(type_value: str, c: Union[str, None] = None):
+def read_item(type_value: str, c: Union[str, None] = None,v: Union[str, None] = None):
     if type_value == "theme":
-        # return {"content":generate(c)}
-        content,viewP = generate(c)
-        return {"type":"theme","theme":c,"viewPoint":viewP,"content":content}
+            promptInput = Loadquestion.makeQuestion(v, c)
+            return StreamingResponse(IdeaAPI.Outputs_custom(promptInput))
+
+    # elif type_value == "unmodified":
+    #     return {"type":"unmodified","content":c,"viewPoint":seePoints[random.randint(0,len(seePoints)-1)][0]}
     
-    elif type_value == "unmodified":
-        return {"type":"unmodified","content":c,"viewPoint":seePoints[random.randint(0,len(seePoints)-1)][0]}
+    # elif type_value == "test":
+    #     return {"theme": type_value, "q": c}
     
-    elif type_value == "test":
-        return {"theme": type_value, "q": c}
-    
+
+    # 例外処理
     else:
         return {"ERROR":"NotFound"}

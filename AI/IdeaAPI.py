@@ -7,6 +7,7 @@ import random
 import Loadquestion
 import json
 from timeout_decorator import timeout
+import asyncio
 
 # モデルの設定
 adpt_path = "./BadMargeModel"
@@ -165,17 +166,20 @@ def Outputs_custom(input_user :str):
     response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
     conversation_history.append({"role": "assistant", "content": response})
     torch.cuda.empty_cache()
-    # print(type(response))
     response_temp = ""
     response_temp = response
-    # print(response_temp)#test
-    # save_data.append(AddSaveDataInfo(SystemPrompt,user_input,response_temp))
+    
+    
+    for output in streamer:
+        if not output:
+            continue
+        await asyncio.sleep(0)
+
     save = AddSaveDataInfo(SystemPrompt,user_input,response_temp)
-    # save_data.append(AddSaveDataInfo(SystemPrompt,user_input,response_temp))
     save_data.append(str(save).replace("'",'"'))
     PromptSave()
 
-    return response
+    return streamer
 
 # print(Outputs_custom("jfweioというテーマについて客観的観点からアドバイスしてください"))
 save_path = "./testPrompts/giron.jsonl"
