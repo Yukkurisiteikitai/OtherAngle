@@ -1,5 +1,8 @@
 site/siteOA
 AI/main
+site/firebaseConfig.json
+AI/othersite
+siteOnly
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
