@@ -17,19 +17,27 @@
             const output = document.getElementById('output');
             output.value = ""; // 出力をクリア
 
-            const response = await fetch('/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: prompt })
-            });
+            // API URL を作成
+            const apiUrl = `http://192.168.1.17:8030/reqt=theme&c=${encodeURIComponent(prompt)}&v=国語的`;
+            console.log(apiUrl);
 
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
+            try {
+                // API へのリクエストを開始
+                const response = await fetch(apiUrl, { method: 'GET' });
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                output.value += decoder.decode(value);
+                // レスポンスをストリーミングとして読み取る
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    output.value += decoder.decode(value); // デコードして追加
+                    output.scrollTop = output.scrollHeight; // 自動スクロール
+                }
+            } catch (error) {
+                console.error("エラーが発生しました:", error);
+                output.value = "エラー: ストリーミングの受信に失敗しました。";
             }
         });
     </script>

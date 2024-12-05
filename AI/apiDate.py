@@ -8,6 +8,7 @@ import Loadquestion
 import json
 # from timeout_decorator import timeout
 import asyncio
+from typing import Union
 
 # モデルの設定
 adpt_path = "./BadMargeModel"
@@ -137,10 +138,54 @@ def Outputs(theme :str):
 
 # opt_minite = 3
 # @timeout(60*opt_minite)
-async def Outputs_custom(input_user :str):
+
+
+
+#    ~===============api==============
+from fastapi import FastAPI,Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from typing import Union
+import random
+import csv
+import time
+
+app = FastAPI()
+
+origins = [
+    "http://localhost:8000",
+    "127.0.0.1",
+    "http://127.0.0.1/",
+    "http://10.16.100.132/",
+    "http://10.16.100.132/",
+    "http://10.16.100.132:8120",
+    "http://192.168.1.17:8120",
+    "http://127.0.0.1:5500"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
+@app.middleware("http")
+async def add_procss_time_header(request: Request,call_net):
+    response = await call_net(request)
+    print(response)
+    return response
+
+
+
+
+@app.get("/inference/type/{type_value}")
+async def read_item(type_value: str, c: Union[str, None] = None,v: Union[str, None] = None):
     global save_data,SystemPrompt
     # print(f"SystemPrompt{SystemPrompt}")#test
-    user_input = input_user    
+    
+    user_input = Loadquestion.makeQuestion(v, c)    
     Reset()
 
     conversation_history.append({"role": "user", "content": user_input})
@@ -150,8 +195,10 @@ async def Outputs_custom(input_user :str):
         add_generation_prompt=True
     )
     model_inputs = tokenizer([prompt], return_tensors="pt", padding=True).to("cuda")
-    with torch.cuda.amp.autocast():  # 混合精度を使用してメモリを節約
-        generated_ids = model.generate(
+    
+    # モデルの生成を開始
+    with torch.cuda.amp.autocast():  # 混合精度でメモリ節約
+        model.generate(
             model_inputs.input_ids,
             attention_mask=model_inputs.attention_mask,
             max_new_tokens=500,
@@ -160,26 +207,13 @@ async def Outputs_custom(input_user :str):
             top_p=0.7,
             top_k=4
         )
-    generated_ids = [
-        output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
-    ]
-    response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
-    conversation_history.append({"role": "assistant", "content": response})
-    torch.cuda.empty_cache()
-    response_temp = ""
-    response_temp = response
-    
-    
-    for output in streamer:
-        if not output:
-            continue
-        await asyncio.sleep(0)
 
-    save = AddSaveDataInfo(SystemPrompt,user_input,response_temp)
-    save_data.append(str(save).replace("'",'"'))
-    PromptSave()
+    # ストリーミングレスポンスを返す
+    return StreamingResponse(streamer, media_type="text/plain")
 
-    return streamer
+
+
+
 
 # print(Outputs_custom("jfweioというテーマについて客観的観点からアドバイスしてください"))
 save_path = "./testPrompts/giron.jsonl"
