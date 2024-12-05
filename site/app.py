@@ -2,7 +2,7 @@ from flask import Flask, request, render_template, redirect,abort
 from urllib.parse import unquote
 from flask_cors import CORS
 import requests
-import time
+
 
 app = Flask(__name__)
 
@@ -21,10 +21,9 @@ def viewPointMake(theme:str ,content:str):
         
 
 reset = ""
-@app.route("/")
-def site_start():
-    #非効率だけど全部それぞれ適用する方法
-    content_dict = {
+
+#setPrameter
+content_dict = {
         'content1':reset,
         'content2':reset,
         'content3':reset,
@@ -32,6 +31,21 @@ def site_start():
         'view2':reset,
         'view3':reset,
     }
+theme_input="テーマを入力してください"
+
+
+@app.route("/")
+def site_start():
+    global content_dict,theme_input
+    #非効率だけど全部それぞれ適用する方法
+    # content_dict = {
+    #     'content1':reset,
+    #     'content2':reset,
+    #     'content3':reset,
+    #     'view1':reset,
+    #     'view2':reset,
+    #     'view3':reset,
+    # }
     return render_template("index.html",content_dict=content_dict,
                            theme_input="テーマを入力してください")
 
@@ -56,22 +70,22 @@ def hihluhnoi():
 
 #apiにtypeとcontentをリクエストする.
 def request_api(type:str,content:str):
+    
     url = "http://127.0.0.1:8030"
     url += "/inference/type/" + type
     url += "?c=" + content
+
     response = requests.get(url)
     response.raise_for_status()
     return response.json()
 
 
-start_t = time.time()
-end_t = time.time()
+
 #フォームの取得する部分.
 theme_temp =""
 @app.route("/setForm")
 def setForm():
-    start_t = time.time()
-    print("set")
+    # print("set")
     theme_input = request.args.get('theme')
     theme_temp=theme_input
 
@@ -89,15 +103,14 @@ def setForm():
 #フォームの入力を実際にリクエストするところ.
 @app.route("/req")
 def noi():
+    # global content_dict
     #取得
     theme_value = request.args.get('t')
 
     content_value = request.args.get('c')
 
+    
 
-
-    # if len(content_value) > 40:
-    #     return {"ERROR":"OverThemeWords","code":len(content_value)}
     # URLデコードを行う
     content_value = unquote(content_value)
 
@@ -105,12 +118,31 @@ def noi():
         # エラーの場合は処理を中断し、エラーレスポンスを返す
         return abort(400, f"Content too long: {len(content_value)} characters")
 
-    answers = []
-    viewPoint = []
+
+    answers = ["","",""]
+    viewPoint = ["","",""]
+    
+    # req = request_api(type=theme_value,content=content_value)
+    # print()
+    # req_d = str(req["answers"])
+    # return req_d
+
     for i in range(3):
-        req = request_api(type=theme_value,content=content_value)
-        answers.append(req['content'])
-        viewPoint.append(req['viewPoint'])
+        req_api = request_api(type=theme_value,content=content_value)
+        
+        # return req
+        # app.logger.info('%s request', req)
+        
+
+        answers[i] = str(req_api['answers'])
+        viewPoint[i] = str(req_api['viewPoint'])
+        # app.logger.info('%s viewPoint', viewPoint[i])
+        # app.logger.info('%s answers', answers[i])
+
+    # print(answers[i for in range(len(answers))])
+    # print(i for i in viewPoint)
+
+    
     content_dict = {
         'content1':answers[0],
         'content2':answers[1],
@@ -119,11 +151,9 @@ def noi():
         'view2':viewPoint[1],
         'view3':viewPoint[2],
     }
-    # end_t = time.time()
 
-    # print("timeRecord:{:.4f}".format(end_t-start_t))
 
-    return render_template("index.html",content_dict=content_dict,theme_input=content_value)()
+    return render_template("index.html",content_dict=content_dict,theme_input=content_value)
 
 #アプリ実行
 if __name__ == "__main__":
