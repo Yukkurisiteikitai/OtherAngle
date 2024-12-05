@@ -103,7 +103,7 @@ def setForm():
 #フォームの入力を実際にリクエストするところ.
 @app.route("/req")
 def noi():
-    global content_dict
+    # global content_dict
     #取得
     theme_value = request.args.get('t')
 
@@ -122,17 +122,27 @@ def noi():
     answers = ["","",""]
     viewPoint = ["","",""]
     
+    # req = request_api(type=theme_value,content=content_value)
+    # print()
+    # req_d = str(req["answers"])
+    # return req_d
 
     for i in range(3):
-        req = request_api(type=theme_value,content=content_value)
-        app.logger.info('%s request', req)
+        req_api = request_api(type=theme_value,content=content_value)
+        
+        # return req
+        # app.logger.info('%s request', req)
+        
 
+        answers[i] = str(req_api['answers'])
+        viewPoint[i] = str(req_api['viewPoint'])
+        # app.logger.info('%s viewPoint', viewPoint[i])
+        # app.logger.info('%s answers', answers[i])
 
-        answers[i](req['content'])
-        viewPoint[i](req['viewPoint'])
-        app.logger.info('%s viewPoint', viewPoint[i])
-        app.logger.info('%s answers', answers[i])
+    # print(answers[i for in range(len(answers))])
+    # print(i for i in viewPoint)
 
+    
     content_dict = {
         'content1':answers[0],
         'content2':answers[1],
@@ -143,7 +153,7 @@ def noi():
     }
 
 
-    return render_template("index.html",content_dict=content_dict,theme_input=content_value)()
+    return render_template("index.html",content_dict=content_dict,theme_input=content_value)
 
 #アプリ実行
 if __name__ == "__main__":

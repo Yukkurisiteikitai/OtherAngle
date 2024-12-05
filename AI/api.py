@@ -5,7 +5,7 @@ import random
 import time
 from fastapi import FastAPI,Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+# from fastapi.responses import StreamingResponse
 from typing import Union
 import random
 import csv
@@ -39,6 +39,7 @@ def LoadCSV(path):
             data_Firsts.append(str(i[0]))
         return data_Firsts
 
+viewPoint = LoadCSV("seePointANDtheme.csv")
 
 Mode = ["custom","Auto"]
 
@@ -118,7 +119,7 @@ class logData():
             "message_log":message_log
         }
 
-    
+
 def save_log(data):
     with open(log_path,"a",encoding="utf-8")as f:
         writer = csv.DictWriter(f, data, extrasaction='ignore')
@@ -127,23 +128,24 @@ def save_log(data):
 
 
 # toDo  
+
 @app.get("/hello")
-async def hello():
-    return {"content":"helloWorld"}
-
-
-@app.get("/unluck")
-async def unluck():
-    return {"ERROR":"unluck"}
-
-
+def ream():
+    return {"hello":"hefoe:fjiojf;oaejwfioewjf;ioe",
+            "unhello":viewPoint}
 
 # api出力
 @app.get("/inference/type/{type_value}")
-def read_item(type_value: str, c: Union[str, None] = None,v: Union[str, None] = None):
+def read_item(type_value: str, c: Union[str, None] = None):
     if type_value == "theme":
+            v = viewPoint[random.randint(0,len(viewPoint)-1)]
             promptInput = Loadquestion.makeQuestion(v, c)
-            return StreamingResponse(IdeaAPI.Outputs_custom(promptInput))
+            print(promptInput)
+            # return "hete"
+            answer =IdeaAPI.Outputs_custom(promptInput)
+            # return StreamingResponse(IdeaAPI.Outputs_custom(promptInput))
+            return {"answers":answer,"viewPoint":v}
+
 
 
     # 例外処理

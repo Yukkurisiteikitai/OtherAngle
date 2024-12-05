@@ -1,6 +1,8 @@
 import os
 import torch
-from transformers import AutoTokenizer,TextIteratorStreamer
+from transformers import AutoTokenizer
+
+# ,TextIteratorStreamer
 from peft import AutoPeftModelForCausalLM
 import time
 import random
@@ -71,7 +73,7 @@ def AddSaveDataInfo(systemPrompt:str,qestion:str,answer:str):
             {'answer":"'+answer}
         ]
     }
-streamer = TextIteratorStreamer(tokenizer=tokenizer,skip_prompt=True,skip_special_tokens=True)
+# streamer = TextIteratorStreamer(tokenizer=tokenizer,skip_prompt=True,skip_special_tokens=True)
 
 def Reset():
     conversation_history = []
@@ -137,7 +139,7 @@ def Outputs(theme :str):
 
 # opt_minite = 3
 # @timeout(60*opt_minite)
-async def Outputs_custom(input_user :str):
+def Outputs_custom(input_user :str):
     global save_data,SystemPrompt
     # print(f"SystemPrompt{SystemPrompt}")#test
     user_input = input_user    
@@ -154,8 +156,8 @@ async def Outputs_custom(input_user :str):
         generated_ids = model.generate(
             model_inputs.input_ids,
             attention_mask=model_inputs.attention_mask,
-            max_new_tokens=500,
-            streamer=streamer,
+            max_new_tokens=10,
+            # streamer=streamer,
             temperature=0.4,
             top_p=0.7,
             top_k=4
@@ -170,16 +172,17 @@ async def Outputs_custom(input_user :str):
     response_temp = response
     
     
-    for output in streamer:
-        if not output:
-            continue
-        await asyncio.sleep(0)
+    # for output in streamer:
+    #     if not output:
+    #         continue
+    #     await asyncio.sleep(0)
 
     save = AddSaveDataInfo(SystemPrompt,user_input,response_temp)
     save_data.append(str(save).replace("'",'"'))
     PromptSave()
 
-    return streamer
+    return response
+    # return streamer
 
 # print(Outputs_custom("jfweioというテーマについて客観的観点からアドバイスしてください"))
 save_path = "./testPrompts/giron.jsonl"
