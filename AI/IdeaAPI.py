@@ -6,7 +6,7 @@ import time
 import random
 import Loadquestion
 import json
-from timeout_decorator import timeout
+# from timeout_decorator import timeout
 import asyncio
 
 # モデルの設定
@@ -137,7 +137,7 @@ def Outputs(theme :str):
 
 # opt_minite = 3
 # @timeout(60*opt_minite)
-def Outputs_custom(input_user :str):
+async def Outputs_custom(input_user :str):
     global save_data,SystemPrompt
     # print(f"SystemPrompt{SystemPrompt}")#test
     user_input = input_user    

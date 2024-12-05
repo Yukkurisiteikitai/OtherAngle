@@ -118,11 +118,6 @@ class logData():
             "message_log":message_log
         }
 
-
-
-# def SaveLog(path:str,data:logData):
-#     with open(""):
-
     
 def save_log(data):
     with open(log_path,"a",encoding="utf-8")as f:
@@ -150,12 +145,6 @@ def read_item(type_value: str, c: Union[str, None] = None,v: Union[str, None] = 
             promptInput = Loadquestion.makeQuestion(v, c)
             return StreamingResponse(IdeaAPI.Outputs_custom(promptInput))
 
-    # elif type_value == "unmodified":
-    #     return {"type":"unmodified","content":c,"viewPoint":seePoints[random.randint(0,len(seePoints)-1)][0]}
-    
-    # elif type_value == "test":
-    #     return {"theme": type_value, "q": c}
-    
 
     # 例外処理
     else:
