@@ -11,35 +11,52 @@
     <input type="text" id="prompt" placeholder="プロンプトを入力してください" />
     <button id="send">送信</button>
 
-    <script>
+    <!-- <script>
         document.getElementById('send').addEventListener('click', async () => {
             const prompt = document.getElementById('prompt').value;
             const output = document.getElementById('output');
             output.value = ""; // 出力をクリア
-
-            // API URL を作成
-            const apiUrl = `http://192.168.1.17:8030/reqt=theme&c=${encodeURIComponent(prompt)}&v=国語的`;
-            console.log(apiUrl);
-
-            try {
-                // API へのリクエストを開始
-                const response = await fetch(apiUrl, { method: 'GET' });
-
-                // レスポンスをストリーミングとして読み取る
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    output.value += decoder.decode(value); // デコードして追加
-                    output.scrollTop = output.scrollHeight; // 自動スクロール
-                }
-            } catch (error) {
-                console.error("エラーが発生しました:", error);
-                output.value = "エラー: ストリーミングの受信に失敗しました。";
+    
+            const response = await fetch(`http://127.0.0.1:8030/inference/type/theme?c=${encodeURIComponent(prompt)}&v=国語的`, {
+                method: 'GET'
+            });
+    
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+    
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                output.value += decoder.decode(value);
             }
         });
-    </script>
+    </script> -->
+
+<script>
+    document.getElementById('send').addEventListener('click', async () => {
+        const prompt = document.getElementById('prompt').value;
+        const output = document.getElementById('output');
+        output.value = ""; // 出力をクリア
+
+        const response = await fetch('http://127.0.0.1:8030/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: prompt })
+        });
+
+        // ストリーミングレスポンスを読み込む
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            output.value += decoder.decode(value); // 文字を追加表示
+        }
+    });
+</script>
+
+
+    
 </body>
 </html>

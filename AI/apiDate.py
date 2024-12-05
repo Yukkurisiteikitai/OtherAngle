@@ -181,23 +181,59 @@ async def add_procss_time_header(request: Request,call_net):
 
 
 @app.get("/inference/type/{type_value}")
-async def read_item(type_value: str, c: Union[str, None] = None,v: Union[str, None] = None):
-    global save_data,SystemPrompt
-    # print(f"SystemPrompt{SystemPrompt}")#test
-    
-    user_input = Loadquestion.makeQuestion(v, c)    
+async def read_item(type_value: str, c: Union[str, None] = None, v: Union[str, None] = None):
+    global conversation_history
     Reset()
 
+    # 入力生成
+    user_input = Loadquestion.makeQuestion(v, c)
     conversation_history.append({"role": "user", "content": user_input})
+
+    # プロンプト作成
     prompt = tokenizer.apply_chat_template(
         conversation=conversation_history,
         tokenize=False,
         add_generation_prompt=True
     )
     model_inputs = tokenizer([prompt], return_tensors="pt", padding=True).to("cuda")
-    
-    # モデルの生成を開始
-    with torch.cuda.amp.autocast():  # 混合精度でメモリ節約
+
+    # ストリーマーを再生成
+    streamer = TextIteratorStreamer(
+        tokenizer=tokenizer,
+        skip_prompt=True,
+        skip_special_tokens=True
+    )
+
+    async def generate_text():
+        print("Starting model generation...")
+        # モデルの生成を開始（非同期ストリーム処理）
+        with torch.cuda.amp.autocast():
+            model.generate(
+                model_inputs.input_ids,
+                attention_mask=model_inputs.attention_mask,
+                max_new_tokens=500,
+                streamer=streamer,
+                temperature=0.4,
+                top_p=0.7,
+                top_k=4
+            )
+        print("Model generation completed.")
+
+        for output in streamer:
+            yield output
+
+
+    # ストリーミングレスポンスを返す
+    return StreamingResponse(generate_text(), media_type="text/plain")
+
+
+import threading
+# グローバル変数
+conversation_history = []
+
+# モデル推論を別スレッドで実行
+def generate_model_output(model_inputs, streamer):
+    with torch.no_grad():
         model.generate(
             model_inputs.input_ids,
             attention_mask=model_inputs.attention_mask,
@@ -208,10 +244,39 @@ async def read_item(type_value: str, c: Union[str, None] = None,v: Union[str, No
             top_k=4
         )
 
+@app.post("/generate")
+async def generate_stream(request: Request):
+    global conversation_history
+
+    req_data = await request.json()
+    user_input = req_data.get("prompt", "")
+    if not user_input:
+        return {"error": "Prompt is missing."}
+
+    # 会話履歴にユーザー入力を追加
+    conversation_history.append({"role": "user", "content": user_input})
+
+    prompt = tokenizer.apply_chat_template(
+        conversation=conversation_history,
+        tokenize=False,
+        add_generation_prompt=True
+    )
+    
+    model_inputs = tokenizer([prompt], return_tensors="pt", padding=True).to("cuda")
+    
+    streamer = TextIteratorStreamer(tokenizer=tokenizer, skip_special_tokens=True)
+
+    # モデル推論を別スレッドで実行
+    thread = threading.Thread(target=generate_model_output, args=(model_inputs, streamer))
+    thread.start()
+
     # ストリーミングレスポンスを返す
-    return StreamingResponse(streamer, media_type="text/plain")
+    async def stream_output():
+        # ストリームから逐次トークンを取得して返す
+        for output in streamer:
+            yield output
 
-
+    return StreamingResponse(stream_output(), media_type="text/plain")
 
 
 
