@@ -3,9 +3,9 @@ from urllib.parse import unquote
 from flask_cors import CORS
 import requests
 
-
 app = Flask(__name__)
 
+# frontend site=>http://127.0.0.1:8030
 CORS(app, resources={r"/*": {
     "origins": ["http://127.0.0.1:8030", "https://example.com","http://127.0.0.1:8000"],
     "methods": ["GET", "POST"],
@@ -13,14 +13,8 @@ CORS(app, resources={r"/*": {
 }})
 
 
-
-def viewPointMake(theme:str ,content:str):
-    # app.make
-    return (theme,content)
-
-        
-
 reset = ""
+
 
 #setPrameter
 content_dict = {
@@ -34,43 +28,36 @@ content_dict = {
 theme_input="テーマを入力してください"
 
 
+def reset_do():
+    global content_dict,theme_input
+    content_dict = {
+        'content1': reset,
+        'content2': reset,
+        'content3': reset,
+        'view1': reset,
+        'view2': reset,
+        'view3': reset,
+    }
+    theme_input = "テーマを入力してください"
+
+
 @app.route("/")
 def site_start():
     global content_dict,theme_input
-    #非効率だけど全部それぞれ適用する方法
-    # content_dict = {
-    #     'content1':reset,
-    #     'content2':reset,
-    #     'content3':reset,
-    #     'view1':reset,
-    #     'view2':reset,
-    #     'view3':reset,
-    # }
+    reset_do()
     return render_template("index.html",content_dict=content_dict,
-                           theme_input="テーマを入力してください")
+                           theme_input=theme_input)
 
 
 @app.route("/request/<theme>")
 def suiron_request(theme:str):
     return f"NOW_LOAD{theme}"
 
-@app.route("/test")
-def hihluhnoi():
-    global theme_temp
-    #取得
-    theme_value = request.args.get('a')
-
-    content_value = request.args.get('c')
-
-    if len(content_value) > 40:
-        return {"ERROR":"OverThemeWords","code":len(content_value)}
-    
-    return {"test":"clear","valuse":len(content_value)}
 
 
 #apiにtypeとcontentをリクエストする.
 def request_api(type:str,content:str):
-    
+
     url = "http://127.0.0.1:8030"
     url += "/inference/type/" + type
     url += "?c=" + content
@@ -89,11 +76,9 @@ def setForm():
     theme_input = request.args.get('theme')
     theme_temp=theme_input
 
-    theme_count = len(theme_temp)
-    print(theme_count)
-    if theme_count > 40:
+    if len(theme_temp) > 40:
         return {"ERROR":"OverThemeWords"}
-    
+
     url = "/req?t=theme&c=" + theme_input
     return redirect(url)
 
@@ -102,14 +87,10 @@ def setForm():
 
 #フォームの入力を実際にリクエストするところ.
 @app.route("/req")
-def noi():
-    # global content_dict
+def get_inference():
     #取得
     theme_value = request.args.get('t')
-
     content_value = request.args.get('c')
-
-    
 
     # URLデコードを行う
     content_value = unquote(content_value)
@@ -121,28 +102,14 @@ def noi():
 
     answers = ["","",""]
     viewPoint = ["","",""]
-    
-    # req = request_api(type=theme_value,content=content_value)
-    # print()
-    # req_d = str(req["answers"])
-    # return req_d
+
 
     for i in range(3):
         req_api = request_api(type=theme_value,content=content_value)
-        
-        # return req
-        # app.logger.info('%s request', req)
-        
 
         answers[i] = str(req_api['answers'])
         viewPoint[i] = str(req_api['viewPoint'])
-        # app.logger.info('%s viewPoint', viewPoint[i])
-        # app.logger.info('%s answers', answers[i])
 
-    # print(answers[i for in range(len(answers))])
-    # print(i for i in viewPoint)
-
-    
     content_dict = {
         'content1':answers[0],
         'content2':answers[1],
