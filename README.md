@@ -1,16 +1,37 @@
 
 # 概要
 複数の視点を提供し、多角的に物事を見るためのサイトのリポジトリです。
+推奨空き容量:10GB以上
+
+# 想定環境
+windows11
+windows10
+cuda:12.7
+
+
+
+# インストール
+1. githubからリポジトリをインストール  
+`git clone https://github.com/Yukkurisiteikitai/OtherAngle.git`
+2. huggingFaceの登録/Loginをする
+3. huggingFaceのアクセストークンを.envのhf_tokenに入れる
+4. モデルのインストールと環境構築を行います  
+`start boot.bat`  
+
 
 # 実行方法
-1. pythonのインストール
-2. venvなど仮想環境の作成
-3. 下のライブラリのインストール
-```pip install requests.txt```
-4. 実行```python app.py```
+AIのサーバーとサイトのサーバーで構成されています
+
+## AIのサーバーの起動手順
+実行
+```
+start setup.bat
+```
+
+# 終了手順
+Control + Cで強制終了する
 
 
-# 環境  
 
 ### 実行環境
 windows11
