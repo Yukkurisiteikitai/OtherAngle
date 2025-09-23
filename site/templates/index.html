@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OtherAngle</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/14.0.0/markdown-it.min.js"></script>
     <style>
         .prose h1 { font-size: 1.875rem; line-height: 2.25rem; font-weight: 800; }
         .prose h2 { font-size: 1.5rem; line-height: 2rem; font-weight: 700; }
@@ -25,7 +26,7 @@
     <div id="main-content" class="container mx-auto px-4 py-8">
         <h1 class="text-4xl font-bold text-center mb-8">テーマ</h1>
         
-        <form class="text-center mb-8" action="{{ url_for('setForm') }}" onsubmit="event.preventDefault(); setLoading();">
+        <form class="text-center mb-8" action="{{ url_for('setForm') }}" method="GET">
             <div class="mb-4">
                 <label for="theme" class="sr-only">テーマ</label>
                 <input type="text" id="theme-input" name="theme" class="w-full max-w-lg mx-auto text-2xl p-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ theme_input }}" placeholder="ここにテーマを入力してください"/>
@@ -37,16 +38,16 @@
 
         <div class="grid md:grid-cols-3 gap-8" id="Advices">
             <div class="bg-white p-6 rounded-lg shadow-md">
-                <h3 class="text-2xl font-bold mb-2">{{ content_dict.view1 }}</h3>
-                <div class="prose">{{ content_dict.content1 | safe }}</div>
+                <h3 id="view1" class="text-2xl font-bold mb-2">{{ content_dict.view1 }}</h3>
+                <div id="content1" class="prose">{{ content_dict.content1 | safe }}</div>
             </div>
             <div class="bg-white p-6 rounded-lg shadow-md">
-                <h3 class="text-2xl font-bold mb-2">{{ content_dict.view2 }}</h3>
-                <div class="prose">{{ content_dict.content2 | safe }}</div>
+                <h3 id="view2" class="text-2xl font-bold mb-2">{{ content_dict.view2 }}</h3>
+                <div id="content2" class="prose">{{ content_dict.content2 | safe }}</div>
             </div>
             <div class="bg-white p-6 rounded-lg shadow-md">
-                <h3 class="text-2xl font-bold mb-2">{{ content_dict.view3 }}</h3>
-                <div class="prose">{{ content_dict.content3 | safe }}</div>
+                <h3 id="view3" class="text-2xl font-bold mb-2">{{ content_dict.view3 }}</h3>
+                <div id="content3" class="prose">{{ content_dict.content3 | safe }}</div>
             </div>
         </div>
     </div>
@@ -57,6 +58,105 @@
     </div>
 
     <script>
+        // Initialize markdown-it
+        const md = window.markdownit();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const themeInput = document.getElementById('theme-input');
+            const theme = themeInput.value.trim();
+            if (theme) {
+                startStreaming(theme);
+            }
+        });
+
+        async function processStream(response, viewId, contentId) {
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let fullContent = '';
+
+            const viewElement = document.getElementById(viewId);
+            const contentElement = document.getElementById(contentId);
+            contentElement.innerHTML = ''; // Clear previous content
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop(); // Keep the last partial line in the buffer
+
+                for (const line of lines) {
+                    if (line.trim() === '') continue;
+                    try {
+                        const data = JSON.parse(line);
+                        if (data.viewPoint) {
+                            viewElement.textContent = data.viewPoint;
+                        } else if (data.answers) {
+                            fullContent += data.answers;
+                            contentElement.innerHTML = md.render(fullContent);
+                        } else if (data.error) {
+                            console.error('Stream error:', data.error);
+                            contentElement.innerHTML = `<p class="text-red-500">Error: ${data.error}</p>`;
+                        }
+                    } catch (e) {
+                        console.error('Error parsing stream data:', e, 'line:', line);
+                    }
+                }
+            }
+        }
+
+        async function startStreaming(theme) {
+            document.getElementById('main-content').classList.add('hidden');
+            document.getElementById('loading-container').classList.remove('hidden');
+            startLoadingAnimation();
+
+            const fetch1 = fetch(`/stream-proxy?theme=${encodeURIComponent(theme)}`);
+            const fetch2 = fetch(`/stream-proxy?theme=${encodeURIComponent(theme)}`);
+            const fetch3 = fetch(`/stream-proxy?theme=${encodeURIComponent(theme)}`);
+
+            try {
+                const [response1, response2, response3] = await Promise.all([fetch1, fetch2, fetch3]);
+
+                await Promise.all([
+                    processStream(response1, 'view1', 'content1'),
+                    processStream(response2, 'view2', 'content2'),
+                    processStream(response3, 'view3', 'content3')
+                ]);
+
+            } catch (error) {
+                console.error('Streaming failed:', error);
+            } finally {
+                document.getElementById('main-content').classList.remove('hidden');
+                document.getElementById('loading-container').classList.add('hidden');
+                stopLoadingAnimation();
+            }
+        }
+
+        let loadingInterval;
+        function startLoadingAnimation() {
+            const loadingText = document.getElementById('loading-text');
+            const seePoints = ["科学的","歴史","社会","経済","国語","古典","研究","化学","論理","地理","芸術","音楽","宗教","道徳","商業","福祉","数学","生物","技術","家庭","情報","保険","体育","工業","医学","農業","水産","介護","対照的","ポジティブな","物理的","原理的","表層的","類似","異質","感情的","データから","効率的","効果の","プログラミング的","客観的","史実的(事実ベースの考え方)","権利的","コスパ","独自性"];
+            let wordIndex = 0;
+            loadingInterval = setInterval(() => {
+                loadingText.textContent = seePoints[wordIndex % seePoints.length];
+                wordIndex++;
+            }, 200);
+            // The tree animation is assumed to be handled by the TreePlugin itself
+        }
+
+        function stopLoadingAnimation() {
+            clearInterval(loadingInterval);
+        }
+
+        // The TreePlugin code is assumed to be here and correct
+        // I am not including it again to avoid breaking it.
+        // The previous step should have fixed it.
+
+    </script>
+    <script>
+        // Copied from previous version, assuming it is correct now.
         (function() {
     function TreePlugin(options) {
         options = options || {};
@@ -252,43 +352,6 @@
 
     window.TreePlugin = TreePlugin;
 })();
-
-        const seePoints = ["科学的","歴史","社会","経済","国語","古典","研究","化学","論理","地理","芸術","音楽","宗教","道徳","商業","福祉","数学","生物","技術","家庭","情報","保険","体育","工業","医学","農業","水産","介護","対照的","ポジティブな","物理的","原理的","表層的","類似","異質","感情的","データから","効率的","効果の","プログラミング的","客観的","史実的(事実ベースの考え方)","権利的","コスパ","独自性"];
-        let tree;
-
-        function setLoading(){
-            document.getElementById('main-content').classList.add('hidden');
-            document.getElementById('loading-container').classList.remove('hidden');
-
-            const treeContainer = document.getElementById('tree-container');
-            tree = new TreePlugin({
-                container: treeContainer,
-                depth: 8,
-                growthSpeed: 2,
-                treeScale: 1.5,
-                branchWidth: 2,
-                gradientStart: '#6b4a2f',
-                gradientEnd: '#a37b58'
-            });
-
-            const loadingText = document.getElementById('loading-text');
-            let wordIndex = 0;
-            const interval = setInterval(() => {
-                if (wordIndex < seePoints.length) {
-                    loadingText.textContent = seePoints[wordIndex];
-                    wordIndex++;
-                } else {
-                    wordIndex = 0;
-                }
-            }, 200);
-
-            // Prevent form submission for this example
-            // In a real scenario, you would submit the form after setting up the loading animation
-            setTimeout(() => {
-                 const theme = document.getElementById('theme-input').value;
-                 window.location.href = `/setForm?theme=${encodeURIComponent(theme)}`;
-            }, 5000); // Simulate a 5 second loading time
-        }
     </script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect,abort
+from flask import Flask, request, render_template, redirect, abort, Response
 from urllib.parse import unquote
 from flask_cors import CORS
 import requests
@@ -8,154 +8,72 @@ from markdown_it import MarkdownIt
 app = Flask(__name__)
 
 CORS(app, resources={r"/*": {
-    "origins": ["http://127.0.0.1:8030", "https://example.com","http://127.0.0.1:8000"],
+    "origins": ["http://127.0.0.1:8030", "https://example.com", "http://127.0.0.1:8000"],
     "methods": ["GET", "POST"],
     "allow_headers": [r"*"]
 }})
 
 
 
-def viewPointMake(theme:str ,content:str):
-    # app.make
-    return (theme,content)
-
-        
 
 reset = ""
 
-#setPrameter
+# Initial content
 content_dict = {
-        'content1':reset,
-        'content2':reset,
-        'content3':reset,
-        'view1':reset,
-        'view2':reset,
-        'view3':reset,
-    }
-theme_input="テーマを入力してください"
-
+    'content1': reset,
+    'content2': reset,
+    'content3': reset,
+    'view1': reset,
+    'view2': reset,
+    'view3': reset,
+}
 
 @app.route("/")
 def site_start():
-    global content_dict,theme_input
-    #非効率だけど全部それぞれ適用する方法
-    # content_dict = {
-    #     'content1':reset,
-    #     'content2':reset,
-    #     'content3':reset,
-    #     'view1':reset,
-    #     'view2':reset,
-    #     'view3':reset,
-    # }
-    return render_template("index.html",content_dict=content_dict,
-                           theme_input="テーマを入力してください")
+    return render_template("index.html", content_dict=content_dict, theme_input="")
 
-
-@app.route("/request/<theme>")
-def suiron_request(theme:str):
-    return f"NOW_LOAD{theme}"
-
-@app.route("/test")
-def hihluhnoi():
-    global theme_temp
-    #取得
-    theme_value = request.args.get('a')
-
-    content_value = request.args.get('c')
-
-    if len(content_value) > 40:
-        return {"ERROR":"OverThemeWords","code":len(content_value)}
-    
-    return {"test":"clear","valuse":len(content_value)}
-
-
-#apiにtypeとcontentをリクエストする.
-def request_api(type:str,content:str):
-    
-    url = "http://127.0.0.1:8030"
-    url += "/inference/type/" + type
-    url += "?c=" + content
-
-    response = requests.get(url)
-    response.raise_for_status()
-    return response.json()
-
-
-
-#フォームの取得する部分.
-theme_temp =""
+# This route now just renders the page with the theme.
+# The actual data loading is done by the frontend via streaming.
 @app.route("/setForm")
 def setForm():
-    # print("set")
-    theme_input = request.args.get('theme')
-    theme_temp=theme_input
-
-    theme_count = len(theme_temp)
-    print(theme_count)
-    if theme_count > 40:
-        return {"ERROR":"OverThemeWords"}
+    theme_input = request.args.get('theme', '')
+    if len(theme_input) > 40:
+        return {"ERROR": "OverThemeWords"}
     
-    url = "/req?t=theme&c=" + theme_input
-    return redirect(url)
+    # Render the template with the theme. The page will then use JS to fetch the streams.
+    return render_template("index.html", content_dict=content_dict, theme_input=theme_input)
 
 
+@app.route("/stream-proxy")
+def stream_proxy():
+    theme = request.args.get('theme', '')
+    if not theme:
+        return Response("Missing 'theme' parameter", status=400)
+
+    # The URL to the FastAPI streaming endpoint
+    url = f"http://127.0.0.1:8030/inference/type/theme?c={theme}"
+
+    def generate():
+        try:
+            with requests.get(url, stream=True, timeout=300) as r:
+                r.raise_for_status() # Raise an exception for bad status codes
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        yield chunk
+        except requests.exceptions.RequestException as e:
+            print(f"Error proxying stream: {e}")
+            # Yield an error message to the client
+            yield f"data: {json.dumps({'error': str(e)})}\\n\\n"
+
+    return Response(generate(), content_type='application/x-ndjson')
 
 
-#フォームの入力を実際にリクエストするところ.
+# The old /req route is no longer needed for the new streaming implementation.
+# You can keep it for other purposes or remove it.
 @app.route("/req")
-def noi():
-    # global content_dict
-    #取得
-    theme_value = request.args.get('t')
+def old_req_route():
+    return "This route is no longer used for the main functionality.", 404
 
-    content_value = request.args.get('c')
-
-    
-
-    # URLデコードを行う
-    content_value = unquote(content_value)
-
-    if len(content_value) > 40:
-        # エラーの場合は処理を中断し、エラーレスポンスを返す
-        return abort(400, f"Content too long: {len(content_value)} characters")
-
-
-    answers = ["","",""]
-    viewPoint = ["","",""]
-    
-    # req = request_api(type=theme_value,content=content_value)
-    # print()
-    # req_d = str(req["answers"])
-    # return req_d
-
-    for i in range(3):
-        req_api = request_api(type=theme_value,content=content_value)
-        
-        # return req
-        # app.logger.info('%s request', req)
-        
-
-        answers[i] = str(req_api['answers'])
-        viewPoint[i] = str(req_api['viewPoint'])
-        # app.logger.info('%s viewPoint', viewPoint[i])
-        # app.logger.info('%s answers', answers[i])
-
-    # print(answers[i for in range(len(answers))])
-    # print(i for i in viewPoint)
-
-    
-    md = MarkdownIt()
-    content_dict = {
-        'content1':md.render(answers[0]),
-        'content2':md.render(answers[1]),
-        'content3':md.render(answers[2]),
-        'view1':viewPoint[0],
-        'view2':viewPoint[1],
-        'view3':viewPoint[2],
-    }
-
-
-    return render_template("index.html",content_dict=content_dict,theme_input=content_value)
 
 #アプリ実行
 if __name__ == "__main__":

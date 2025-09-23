@@ -4,11 +4,12 @@ import random
 import json
 import asyncio
 import lm_studio_client
+from threading import Thread
 
 # ローカルモデル関連のライブラリをtry-exceptで囲む
 try:
     import torch
-    from transformers import AutoTokenizer
+    from transformers import AutoTokenizer, TextIteratorStreamer
     from peft import AutoPeftModelForCausalLM
     LOCAL_MODEL_AVAILABLE = True
 except ImportError:
@@ -51,37 +52,20 @@ else:
 QuestionCSVpath = "seePointANDtheme.csv"
 seePoints, themes = Loadquestion.LoadQuestion(QuestionCSVpath)
 conversation_history = []
-# SystemPrompt = "あなたは問題点を指摘するのが得意なアドバイザーです。今回は箇条書きで回答アドバイスしてください。また箇条書きは3つまでとなります。"
 SystemPrompt = "あなたは優秀なサポーターです。目的は一つのテーマを様々な観点から見ることでそのテーマを分析すること。そのテーマをその観点からみたらどうなるかを教えてください。ただし300文字程度に収めてください。"
 
 #SaveDatas
 save_data = []
-# save_path = "./testPrompts/RecToPrompts.jsonl"
 save_path = "./testPrompts/Log.jsonl"
 
 def AddSaveDataInfo(systemPrompt:str,qestion:str,answer:str):
-    # return    {
-    #     "messages":[
-    #         {'"SystemPrompt"'+':"'+systemPrompt+'"'},
-    #         {"question"+':"'+qestion+'"'},
-    #         {'"answer"'+':"'+answer+'"'}
-    #     ]
-    # }
-    # return    {
-    #     "messages":[
-    #         {"SystemPrompt"+":"+systemPrompt},
-    #         {"question"+":"+qestion},
-    #         {"answer"+":"+answer}
-    #     ]
-    # }
     return    {
         "messages":[
-            {'SystemPrompt":"'+''+systemPrompt},
-            {'question":"'+qestion},
-            {'answer":"'+answer}
+            {'SystemPrompt':''+''+systemPrompt},
+            {'question':qestion},
+            {'answer':answer}
         ]
     }
-# streamer = TextIteratorStreamer(tokenizer=tokenizer,skip_prompt=True,skip_special_tokens=True)
 
 def Reset():
     conversation_history = []
@@ -102,119 +86,82 @@ def ProgramSetSystemPrompt(prompt):
 Reset()
 
 def Outputs(theme :str):
-    # ランダムに質問を生成
-    user_input = Loadquestion.makeQuestion(seePoints[random.randint(0, len(seePoints) - 1)], theme)    
+    # This is the original non-streaming function, kept for compatibility
+    user_input = Loadquestion.makeQuestion(seePoints[random.randint(0, len(seePoints) - 1)], theme)
+    return Outputs_custom(user_input)
 
-    start_time = time.time()
-    conversation_history.append({"role": "user", "content": user_input})
-    response = ""
-
-    # まずローカルモデルでの推論を試みる
-    if LOCAL_MODEL_AVAILABLE and model is not None and tokenizer is not None:
-        print("ローカルモデルで推論を実行します...")
-        try:
-            prompt = tokenizer.apply_chat_template(
-                conversation=conversation_history,
-                tokenize=False,
-                add_generation_prompt=True
-            )
-            model_inputs = tokenizer([prompt], return_tensors="pt", padding=True).to("cuda")
-            with torch.cuda.amp.autocast():
-                generated_ids = model.generate(
-                    model_inputs.input_ids,
-                    attention_mask=model_inputs.attention_mask,
-                    max_new_tokens=500
-                )
-            generated_ids = [
-                output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
-            ]
-            response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
-            torch.cuda.empty_cache()
-        except Exception as e:
-            print(f"ローカルモデルでの推論中にエラーが発生しました: {e}")
-            response = "" # エラーが発生したらresponseを空にしておく
-
-    # ローカルモデルでの推論が失敗した場合、LM Studioにフォールバック
-    if not response:
-        print("LM Studioにフォールバックして推論を実行します...")
-        try:
-            response = lm_studio_client.generate_text(conversation_history)
-        except Exception as e:
-            print(f"LM Studioでの推論中にエラーが発生しました: {e}")
-            response = "エラー: 全ての推論方法に失敗しました。"
-
-
-    # 会話履歴に回答を追加
-    conversation_history.append({"role": "assistant", "content": response})
-    end_time = time.time()
-    print("実行時間: {:.2f}秒".format(end_time - start_time))
-    # メモリキャッシュの解放
-    # torch.cuda.empty_cache() # ローカルモデル使用時に移動済み
-    response_temp = r""
-    response_temp = response
-    save = AddSaveDataInfo(SystemPrompt,user_input,response_temp)
-    # save_data.append(AddSaveDataInfo(SystemPrompt,user_input,response_temp))
-    save_data.append(str(save).replace("'",'"'))
-    return response
-
-# opt_minite = 3
-# @timeout(60*opt_minite)
 def Outputs_custom(input_user :str):
-    global save_data,SystemPrompt
-    user_input = input_user    
+    # This is the original non-streaming function, kept for compatibility
+    full_response = ""
+    for chunk in Outputs_custom_stream(input_user):
+        full_response += chunk
+    return full_response
+
+def Outputs_custom_stream(input_user: str):
+    global save_data, SystemPrompt
+    user_input = input_user
     Reset()
 
     conversation_history.append({"role": "user", "content": user_input})
-    response = ""
+    response_generated = False
 
-    # まずローカルモデルでの推論を試みる
     if LOCAL_MODEL_AVAILABLE and model is not None and tokenizer is not None:
-        print("ローカルモデルで推論を実行します...")
+        print("ローカルモデルでストリーミング推論を実行します...")
         try:
+            streamer = TextIteratorStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
             prompt = tokenizer.apply_chat_template(
                 conversation=conversation_history,
                 tokenize=False,
                 add_generation_prompt=True
             )
             model_inputs = tokenizer([prompt], return_tensors="pt", padding=True).to("cuda")
-            with torch.cuda.amp.autocast():
-                generated_ids = model.generate(
-                    model_inputs.input_ids,
-                    attention_mask=model_inputs.attention_mask,
-                    max_new_tokens=10,
-                    temperature=0.4,
-                    top_p=0.7,
-                    top_k=4
-                )
-            generated_ids = [
-                output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
-            ]
-            response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+            
+            generation_kwargs = dict(
+                model_inputs,
+                streamer=streamer,
+                max_new_tokens=500,
+                temperature=0.4,
+                top_p=0.7,
+                top_k=40,
+            )
+            
+            thread = Thread(target=model.generate, kwargs=generation_kwargs)
+            thread.start()
+            response_generated = True
+            
+            full_response = ""
+            for new_text in streamer:
+                full_response += new_text
+                yield new_text
+            
+            thread.join()
             torch.cuda.empty_cache()
+            # Save the full response after streaming is complete
+            save = AddSaveDataInfo(SystemPrompt, user_input, full_response)
+            save_data.append(str(save).replace("'", '"'))
+            PromptSave()
+
         except Exception as e:
-            print(f"ローカルモデルでの推論中にエラーが発生しました: {e}")
-            response = "" # エラーが発生したらresponseを空にしておく
-    
-    # ローカルモデルでの推論が失敗した場合、LM Studioにフォールバック
-    if not response:
-        print("LM Studioにフォールバックして推論を実行します...")
+            print(f"ローカルモデルでのストリーミング推論中にエラーが発生しました: {e}")
+            response_generated = False
+
+    if not response_generated:
+        print("LM Studioにフォールバックしてストリーミング推論を実行します...")
         try:
-            response = lm_studio_client.generate_text(conversation_history)
+            full_response = ""
+            for chunk in lm_studio_client.generate_text_stream(conversation_history):
+                full_response += chunk
+                yield chunk
+            
+            # Save the full response after streaming is complete
+            save = AddSaveDataInfo(SystemPrompt, user_input, full_response)
+            save_data.append(str(save).replace("'", '"'))
+            PromptSave()
+
         except Exception as e:
-            print(f"LM Studioでの推論中にエラーが発生しました: {e}")
-            response = "エラー: 全ての推論方法に失敗しました。"
+            print(f"LM Studioでのストリーミング推論中にエラーが発生しました: {e}")
+            yield "エラー: 全ての推論方法に失敗しました。"
 
-    conversation_history.append({"role": "assistant", "content": response})
-    
-    response_temp = response
-    save = AddSaveDataInfo(SystemPrompt,user_input,response_temp)
-    save_data.append(str(save).replace("'",'"'))
-    PromptSave()
-
-    return response
-    # return streamer
-
-# print(Outputs_custom("jfweioというテーマについて客観的観点からアドバイスしてください"))
 save_path = "./testPrompts/giron.jsonl"
 def PromptSave():
     global save_data,save_path
@@ -225,6 +172,3 @@ def PromptSave():
             file.writelines(f"{line}\n" for line in save_data)
         print("[Success Save]")
         save_data = []
-    # save_data = []
-
-# print("回答を終了させていただきました")
