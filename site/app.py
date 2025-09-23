@@ -2,6 +2,7 @@ from flask import Flask, request, render_template, redirect,abort
 from urllib.parse import unquote
 from flask_cors import CORS
 import requests
+from markdown_it import MarkdownIt
 
 
 app = Flask(__name__)
@@ -143,10 +144,11 @@ def noi():
     # print(i for i in viewPoint)
 
     
+    md = MarkdownIt()
     content_dict = {
-        'content1':answers[0],
-        'content2':answers[1],
-        'content3':answers[2],
+        'content1':md.render(answers[0]),
+        'content2':md.render(answers[1]),
+        'content3':md.render(answers[2]),
         'view1':viewPoint[0],
         'view2':viewPoint[1],
         'view3':viewPoint[2],
