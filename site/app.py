@@ -1,14 +1,15 @@
 from flask import Flask, request, render_template, redirect, abort, Response
-from urllib.parse import unquote
+from urllib.parse import unquote, quote
 from flask_cors import CORS
 import requests
 from markdown_it import MarkdownIt
+import json
 
 
 app = Flask(__name__)
 
 CORS(app, resources={r"/*": {
-    "origins": ["http://127.0.0.1:8030", "https://example.com", "http://127.0.0.1:8000"],
+    "origins": ["http://127.0.0.1:8030", "https://example.com", "http://127.0.0.1:8000","http://127.0.0.1:8120"],
     "methods": ["GET", "POST"],
     "allow_headers": [r"*"]
 }})
@@ -50,8 +51,10 @@ def stream_proxy():
     if not theme:
         return Response("Missing 'theme' parameter", status=400)
 
+    # URL-encode the theme parameter before passing it to the next service
+    theme_encoded = quote(theme)
     # The URL to the FastAPI streaming endpoint
-    url = f"http://127.0.0.1:8030/inference/type/theme?c={theme}"
+    url = f"http://127.0.0.1:8030/inference/type/theme?c={theme_encoded}"
 
     def generate():
         try:
@@ -63,7 +66,7 @@ def stream_proxy():
         except requests.exceptions.RequestException as e:
             print(f"Error proxying stream: {e}")
             # Yield an error message to the client
-            yield f"data: {json.dumps({'error': str(e)})}\\n\\n"
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
     return Response(generate(), content_type='application/x-ndjson')
 
@@ -77,4 +80,4 @@ def old_req_route():
 
 #アプリ実行
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8120, debug=False)
+    app.run(host="0.0.0.0", port=8120, debug=True)

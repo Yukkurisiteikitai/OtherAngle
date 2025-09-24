@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OtherAngle</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/14.0.0/markdown-it.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.0.0/dist/markdown-it.min.js"></script>
     <style>
         .prose h1 { font-size: 1.875rem; line-height: 2.25rem; font-weight: 800; }
         .prose h2 { font-size: 1.5rem; line-height: 2rem; font-weight: 700; }
@@ -58,10 +58,11 @@
     </div>
 
     <script>
-        // Initialize markdown-it
-        const md = window.markdownit();
+        let md;
 
-        document.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('load', () => {
+            md = window.markdownit();
+
             const themeInput = document.getElementById('theme-input');
             const theme = themeInput.value.trim();
             if (theme) {
@@ -108,9 +109,15 @@
         }
 
         async function startStreaming(theme) {
-            document.getElementById('main-content').classList.add('hidden');
-            document.getElementById('loading-container').classList.remove('hidden');
-            startLoadingAnimation();
+            // Clear existing content before streaming starts
+            document.getElementById('view1').textContent = '';
+            document.getElementById('content1').innerHTML = '';
+            document.getElementById('view2').textContent = '';
+            document.getElementById('content2').innerHTML = '';
+            document.getElementById('view3').textContent = '';
+            document.getElementById('content3').innerHTML = '';
+
+            // No loading screen, just stream directly into the content areas
 
             const fetch1 = fetch(`/stream-proxy?theme=${encodeURIComponent(theme)}`);
             const fetch2 = fetch(`/stream-proxy?theme=${encodeURIComponent(theme)}`);
@@ -127,231 +134,17 @@
 
             } catch (error) {
                 console.error('Streaming failed:', error);
+                // Display error in content areas if streaming fails
+                document.getElementById('content1').innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
+                document.getElementById('content2').innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
+                document.getElementById('content3').innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
             } finally {
-                document.getElementById('main-content').classList.remove('hidden');
-                document.getElementById('loading-container').classList.add('hidden');
-                stopLoadingAnimation();
+                // No loading screen to hide
             }
         }
 
-        let loadingInterval;
-        function startLoadingAnimation() {
-            const loadingText = document.getElementById('loading-text');
-            const seePoints = ["科学的","歴史","社会","経済","国語","古典","研究","化学","論理","地理","芸術","音楽","宗教","道徳","商業","福祉","数学","生物","技術","家庭","情報","保険","体育","工業","医学","農業","水産","介護","対照的","ポジティブな","物理的","原理的","表層的","類似","異質","感情的","データから","効率的","効果の","プログラミング的","客観的","史実的(事実ベースの考え方)","権利的","コスパ","独自性"];
-            let wordIndex = 0;
-            loadingInterval = setInterval(() => {
-                loadingText.textContent = seePoints[wordIndex % seePoints.length];
-                wordIndex++;
-            }, 200);
-            // The tree animation is assumed to be handled by the TreePlugin itself
-        }
+        // Removed loading animation functions and TreePlugin code
 
-        function stopLoadingAnimation() {
-            clearInterval(loadingInterval);
-        }
-
-        // The TreePlugin code is assumed to be here and correct
-        // I am not including it again to avoid breaking it.
-        // The previous step should have fixed it.
-
-    </script>
-    <script>
-        // Copied from previous version, assuming it is correct now.
-        (function() {
-    function TreePlugin(options) {
-        options = options || {};
-        this.container = options.container || document.body;
-        this.fullDepth = 11;
-        this.depth = options.depth || this.fullDepth;
-        this.pixelRatio = window.devicePixelRatio > 1 ? 2 : 1;
-        this.growthSpeed = options.growthSpeed || 1;
-        this.treeScale = options.treeScale || 1;
-        this.branchWidth = options.branchWidth || 1;
-        this.colorMode = options.colorMode || "gradient"; // "gradient" or "solid"
-        this.color = options.color || "#000";
-        this.gradientStart = options.gradientStart || "#8B4513";
-        this.gradientEnd = options.gradientEnd || "#228B22";
-        this.seed = options.seed !== undefined ? Number(options.seed) : undefined;
-
-        if (this.seed !== undefined) {
-            var totalCount = 10000;
-            this.randSeq = [];
-            var s = this.seed;
-            for (var i = 0; i < totalCount; i++) {
-                s = (s * 16807) % 2147483647;
-                var rnd = (s - 1) / 2147483646;
-                this.randSeq.push(rnd);
-            }
-            this.randCounter = 0;
-        }
-
-        this.canvas = document.createElement("canvas");
-        this.container.appendChild(this.canvas);
-        this.ctx = this.canvas.getContext("2d");
-        this.branches = [];
-        this.animation = null;
-        this.currentDepth = 0;
-
-        this.addEventListeners();
-        this.resize();
-        this.startTree(this.stageWidth / 2, this.stageHeight);
-    }
-
-    TreePlugin.prototype.addEventListeners = function () {
-        window.addEventListener("resize", this.resize.bind(this));
-    };
-
-    TreePlugin.prototype.resize = function () {
-        this.stageWidth = this.container.clientWidth;
-        this.stageHeight = this.container.clientHeight;
-        this.canvas.width = this.stageWidth * this.pixelRatio;
-        this.canvas.height = this.stageHeight * this.pixelRatio;
-        this.ctx.setTransform(this.pixelRatio, 0, 0, this.pixelRatio, 0, 0);
-        this.clearCanvas();
-    };
-
-    TreePlugin.prototype.clearCanvas = function () {
-        this.ctx.clearRect(0, 0, this.stageWidth, this.stageHeight);
-    };
-
-    TreePlugin.prototype.startTree = function (posX, posY) {
-        if (this.animation) cancelAnimationFrame(this.animation);
-        this.clearCanvas();
-        if (this.seed !== undefined) {
-            this.randCounter = 0;
-        }
-        this.branches = Array.from({ length: this.formationRule(0) }, (_, i) => {
-            return new Branch(
-                this,
-                posX,
-                posY,
-                -90,
-                0,
-                this.colorMode === "gradient" ? this.gradientStart : this.color
-            );
-        });
-        this.currentDepth = 0;
-        this.animation = requestAnimationFrame(this.animate.bind(this));
-    };
-
-    TreePlugin.prototype.animate = function () {
-        var isDone = true;
-        this.branches.forEach((branch) => {
-            if (!branch.isDone) {
-                isDone = false;
-                branch.grow();
-            }
-        });
-
-        if (isDone && this.currentDepth <= this.depth) {
-            this.currentDepth++;
-            var newBranches = [];
-            this.branches.forEach((branch) => {
-                if (branch.canBranch) {
-                    var children = Array.from({ length: this.formationRule(this.currentDepth) }, () => {
-                        return branch.createChild();
-                    });
-                    newBranches.push(...children);
-                }
-            });
-            this.branches.push(...newBranches);
-            this.animation = requestAnimationFrame(this.animate.bind(this));
-        } else if (isDone && this.currentDepth > this.depth) {
-            cancelAnimationFrame(this.animation);
-        } else {
-            this.animation = requestAnimationFrame(this.animate.bind(this));
-        }
-    };
-
-    TreePlugin.prototype.rand = function () {
-        if (this.seed !== undefined) {
-            if (this.randCounter >= this.randSeq.length) {
-                this.randCounter = 0;
-            }
-            return this.randSeq[this.randCounter++];
-        } else {
-            return Math.random();
-        }
-    };
-
-    TreePlugin.prototype.formationRule = function (depth) {
-        if (depth === 0) {
-            return 1;
-        } else {
-            return this.rand() > 0.4 ? 2 : 1;
-        }
-    };
-
-    function Branch(tree, posX, posY, angle, depth, color) {
-        this.tree = tree;
-        this.posX = posX;
-        this.posY = posY;
-        this.angle = angle;
-        this.depth = depth;
-        this.color = color;
-        this.isDone = false;
-        this.canBranch = true;
-
-        this.totalLength = (this.tree.rand() * 0.5 + 0.5) * (this.tree.stageHeight / (this.depth + 3)) * this.tree.treeScale;
-        this.currentLength = 0;
-        this.width = (this.tree.depth - this.depth) * 0.5 * this.tree.branchWidth;
-    }
-
-    Branch.prototype.grow = function () {
-        if (this.isDone) return;
-
-        var growth = this.tree.growthSpeed * (this.tree.rand() * 0.5 + 0.5);
-        this.currentLength += growth;
-
-        if (this.currentLength >= this.totalLength) {
-            this.currentLength = this.totalLength;
-            this.isDone = true;
-        }
-
-        var rad = (this.angle * Math.PI) / 180;
-        var newX = this.posX + this.currentLength * Math.cos(rad);
-        var newY = this.posY + this.currentLength * Math.sin(rad);
-
-        this.tree.ctx.beginPath();
-        this.tree.ctx.moveTo(this.posX, this.posY);
-        this.tree.ctx.lineTo(newX, newY);
-        this.tree.ctx.lineWidth = this.width;
-        this.tree.ctx.strokeStyle = this.color;
-        this.tree.ctx.stroke();
-    };
-
-    Branch.prototype.createChild = function () {
-        var newAngle = this.angle + (this.tree.rand() * 60 - 30);
-        var newDepth = this.depth + 1;
-        var rad = (this.angle * Math.PI) / 180;
-        var newX = this.posX + this.totalLength * Math.cos(rad);
-        var newY = this.posY + this.totalLength * Math.sin(rad);
-        var newColor;
-
-        if (this.tree.colorMode === "gradient") {
-            var ratio = newDepth / this.tree.depth;
-            newColor = this.tree.ctx.createLinearGradient(0, 0, 0, this.tree.stageHeight);
-            var startColor = this.tree.gradientStart;
-            var endColor = this.tree.gradientEnd;
-            var r1 = parseInt(startColor.substring(1, 3), 16);
-            var g1 = parseInt(startColor.substring(3, 5), 16);
-            var b1 = parseInt(startColor.substring(5, 7), 16);
-            var r2 = parseInt(endColor.substring(1, 3), 16);
-            var g2 = parseInt(endColor.substring(3, 5), 16);
-            var b2 = parseInt(endColor.substring(5, 7), 16);
-            var r = Math.round(r1 + (r2 - r1) * ratio);
-            var g = Math.round(g1 + (g2 - g1) * ratio);
-            var b = Math.round(b1 + (b2 - b1) * ratio);
-            newColor = `rgb(${r}, ${g}, ${b})`;
-        } else {
-            newColor = this.tree.color;
-        }
-
-        return new Branch(this.tree, newX, newY, newAngle, newDepth, newColor);
-    };
-
-    window.TreePlugin = TreePlugin;
-})();
     </script>
 </body>
 </html>
