@@ -4,12 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Streaming</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>ストリーミングデモ</h1>
-    <textarea id="output" cols="80" rows="20" readonly></textarea><br>
-    <input type="text" id="prompt" placeholder="プロンプトを入力してください" />
-    <button id="send">送信</button>
+<body class="bg-gray-100 text-gray-800">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold text-center mb-8">ストリーミングデモ</h1>
+        <div class="max-w-2xl mx-auto">
+            <textarea id="output" cols="80" rows="20" readonly class="w-full p-4 border border-gray-300 rounded-lg shadow-sm bg-gray-50 mb-4"></textarea>
+            <div class="flex gap-4">
+                <input type="text" id="prompt" placeholder="プロンプトを入力してください" class="flex-grow p-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+                <button id="send" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg cursor-pointer text-xl">送信</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         document.getElementById('send').addEventListener('click', async () => {

@@ -1,4 +1,6 @@
 import os
+import sys
+sys.path.append('AI')
 import torch
 from transformers import AutoTokenizer
 
@@ -22,7 +24,7 @@ hf_token= os.getenv("hf_token")
 login(hf_token)
 
 # モデルの設定
-adpt_path = "./BadMargeModel"
+adpt_path = "AI/BadMargeModel"
 # repo_id = "elyza/Llama-3-ELYZA-JP-8B"
 repo_id = "elyza/Llama-3-ELYZA-JP-8B"
 
@@ -31,10 +33,10 @@ repo_id = "elyza/Llama-3-ELYZA-JP-8B"
 try:
     model = AutoPeftModelForCausalLM.from_pretrained(
         pretrained_model_name_or_path=adpt_path,
-        local_files_only=True,
+        local_files_only=False,
         device_map="auto",  # 自動的にデバイスを割り当て
         torch_dtype=torch.float16,
-        load_in_4bit=True  # 4bit量子化
+        load_in_4bit=False  # 4bit量子化
     )
     model.eval()
 except EOFError:

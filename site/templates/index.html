@@ -4,184 +4,147 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OtherAngle</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.0.0/dist/markdown-it.min.js"></script>
+    <style>
+        .prose h1 { font-size: 1.875rem; line-height: 2.25rem; font-weight: 800; }
+        .prose h2 { font-size: 1.5rem; line-height: 2rem; font-weight: 700; }
+        .prose h3 { font-size: 1.25rem; line-height: 1.75rem; font-weight: 600; }
+        .prose p { margin-top: 1.25em; margin-bottom: 1.25em; }
+        .prose strong { font-weight: 700; }
+        .prose ul { list-style-type: disc; padding-left: 1.5em; margin-top: 1.25em; margin-bottom: 1.25em; }
+        .prose ol { list-style-type: decimal; padding-left: 1.5em; margin-top: 1.25em; margin-bottom: 1.25em; }
+        .prose li { margin-top: 0.5em; margin-bottom: 0.5em; }
+        .prose blockquote { margin-top: 1.5em; margin-bottom: 1.5em; border-left-width: 4px; border-color: #e5e7eb; padding-left: 1em; font-style: italic; }
+        .prose code { font-family: monospace; background-color: #f3f4f6; padding: 0.2em 0.4em; margin: 0; font-size: 85%; border-radius: 3px; }
+        .prose pre { font-family: monospace; background-color: #f3f4f6; padding: 1em; border-radius: 6px; overflow: auto; }
+        .prose pre code { background-color: transparent; padding: 0; margin: 0; font-size: inherit; border-radius: 0; }
+    </style>
 </head>
-<body>
+<body class="bg-gray-100 text-gray-800">
 
-    <!-- <div class="formSet"></div> -->
-    <h1 class="title">テーマ</h1>
-    
-    <form class="form" action="{{ url_for('setForm') }}" onsubmit="setLoading()">
-        <div>
-            <label for="theme"></label>
-            <input type="text" name="theme" class="theme" value="{{ theme_input }}"/>
-        </div>
-        <div>
-            <input type="submit" class="theme_button" value="出力" />
-        </div>    
-    </form>
-    <!-- <a href="/request/aaa">aaa</a> -->
-    <div class="Advices" id="Advices">
-        <div class="seePoint">
-            <h3 class="viewPoint">{{ content_dict.view1 }}</h3>
-            <p>{{ content_dict.content1 }}</p>
-        </div>
-        <div class="seePoint">
-            <h3 class="viewPoint">{{ content_dict.view2 }}</h3>
-            <p class="content">{{ content_dict.content2 }}</p>
-        </div>
-        <div class="seePoint">
-            <h3 class="viewPoint">{{ content_dict.view3 }}</h3>
-            <p class="content">{{ content_dict.content3 }}</p>
+    <div id="main-content" class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold text-center mb-8">テーマ</h1>
+        
+        <form class="text-center mb-8" action="{{ url_for('setForm') }}" method="GET">
+            <div class="mb-4">
+                <label for="theme" class="sr-only">テーマ</label>
+                <input type="text" id="theme-input" name="theme" class="w-full max-w-lg mx-auto text-2xl p-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ theme_input }}" placeholder="ここにテーマを入力してください"/>
+            </div>
+            <div>
+                <input type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full cursor-pointer text-xl" value="出力" />
+            </div>    
+        </form>
+
+        <div class="grid md:grid-cols-3 gap-8" id="Advices">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h3 id="view1" class="text-2xl font-bold mb-2">{{ content_dict.view1 }}</h3>
+                <div id="content1" class="prose">{{ content_dict.content1 | safe }}</div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h3 id="view2" class="text-2xl font-bold mb-2">{{ content_dict.view2 }}</h3>
+                <div id="content2" class="prose">{{ content_dict.content2 | safe }}</div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h3 id="view3" class="text-2xl font-bold mb-2">{{ content_dict.view3 }}</h3>
+                <div id="content3" class="prose">{{ content_dict.content3 | safe }}</div>
+            </div>
         </div>
     </div>
 
-    
-
-    <style>
-        h1{
-            text-align: center;
-            font-size: 30px;
-        }
-        .form{
-            text-align: center;
-        }
-
-        .theme{
-            padding-bottom: 10px;
-            width: 100%;
-            height: 100px;
-            font-size: 80px;
-            border: none;
-
-            text-align: center;
-            outline:none
-        }
-
-        .Advices{
-            display: flex;
-        }
-        .seePoint{
-            width: 33%;
-            text-align: center;
-            margin-left: 10px;
-            margin-right: 10px;
-        }
-        h3.viewPoint{
-            font-size: 40px;
-            margin-top: 10px;
-            margin-bottom: 1px;
-        }
-        .theme_button{
-            background-color: white;
-            color: brown;
-            width: 120px;
-            height: 50px;
-            font-size: 30px;
-            border-radius: 45%;
-        }
-
-        .loader {
-            border: 16px solid #f3f3f3; /* Light grey */
-            border-top: 16px solid #3498db; /* Blue */
-            border-radius: 50%;
-            width: 120px;
-            height: 120px;
-            animation: spin 2s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-    </style>
+    <div id="loading-container" class="hidden fixed top-0 left-0 w-full h-full bg-gray-100 z-50">
+        <div id="tree-container" class="w-full h-full"></div>
+        <div id="loading-text" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl font-bold text-gray-800"></div>
+    </div>
 
     <script>
+        let md;
 
-        const advices = document.getElementById("Advices");
-        
-        const advices_texts = ["科学的","倫理","Core"];
-        const seePoint_texts = ["科学的には、生存競争で生きて繁殖できた生命体がいきそれ以外は消滅していると推測されています　　　　　　　1.勉強の価値\nあああああああ",
-                                "ご飯が好きである",
-                                "我輩は生きている"];
-    
-        //観点の追加
-        function AddSeePoint(seePoint,advice)
-        {
-            var seeP_constion = document.createElement("div");
-            seeP_constion.setAttribute("class","seePoint");
-                var seeP_text = document.createElement("h3");
-                seeP_text.setAttribute("class","viewPoint");
-                seeP_text.textContent = seePoint;
-                seeP_constion.appendChild(seeP_text);
+        window.addEventListener('load', () => {
+            md = window.markdownit();
 
-                var advice_text = document.createElement("p");
-                advice_text.setAttribute("class","advice");
-                advice_text.textContent = advice;
-                seeP_constion.appendChild(advice_text);
-            advices.appendChild(seeP_constion);
-        }
+            const themeInput = document.getElementById('theme-input');
+            const theme = themeInput.value.trim();
+            if (theme) {
+                startStreaming(theme);
+            }
+        });
 
-        
+        async function processStream(response, viewId, contentId) {
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let fullContent = '';
 
-        // for (let i = 0; i < advices_texts.length; i++)
-        // {
-        //     console.log(i);
-        //     AddSeePoint(advices_texts[i],seePoint_texts[i]);
-        // }
-        // let a =AddSeePoint("hon","ほん");
+            const viewElement = document.getElementById(viewId);
+            const contentElement = document.getElementById(contentId);
+            contentElement.innerHTML = ''; // Clear previous content
 
-        //advice_content
-        
-        let viewPoint_tests = document.getElementsByClassName("viewPoint");
-        let advice_tests = document.getElementsByClassName("advice");
-        const seePoints = ["科学的","歴史","社会","経済","国語","古典","研究","化学","論理","地理","芸術","音楽","宗教","道徳","商業","福祉","数学","生物","技術","家庭","情報","保険","体育","工業","医学","農業","水産","介護","対照的","ポジティブな","物理的","原理的","表層的","類似","異質","感情的","データから","効率的","効果の","プログラミング的","客観的","史実的(事実ベースの考え方)","権利的","コスパ","独自性",]
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
 
-        function rd(mix,max)
-        {
-            return Math.random() * (max - mix) + mix
-        }
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop(); // Keep the last partial line in the buffer
 
-        function getRandomInt(max) 
-        {
-            return Math.floor(Math.random() * max);
-        }
-        function setLoading(){
-            const loader = document.createElement("div");
-            loader.setAttribute("class","loader");
-            loader.textContent = "推論中-1分半程度かかります";
-            document.body.appendChild(loader);
-        }
-
-        // function getAdvice(theme,view)
-        // {
-        //     const xhr = new XMLHttpRequest();
-        //     xhr.open("POST",`http://127.0.0.1:8030/theme/${view}?q=${theme}`);
-        //     xhr.send();
-        //     xhr.responseType = "json";
-        //     let data = {"json":"cotens"};
-        //     xhr.onload = () => {
-        //         if(xhr.readyState == 4 && xhr.status == 200){
-        //             data = xhr.response;
-        //         }else{
-        //             console.log(`Error:${xhr.status}`);
-        //         }
-        //     }
-        //     return data;
-        // }
-        // console.log(getAdvice("ahee",89));
-
-        function SetAdvice()
-        {
-            for(let i = 0; i < viewPoint_tests.length; i++) {
-                // console.log(viewPoint_tests.item(i).innerHTML);
-                // console.log(rd(0,seePoints.length-1));
-                viewPoint_tests.item(i).innerHTML = seePoints[getRandomInt(seePoints.length-1)];
-                advice_tests.item(i).innerHTML = getAdvice(theme,i)
-                // console.log(advice_tests.item(i).innerHTML);
+                for (const line of lines) {
+                    if (line.trim() === '') continue;
+                    try {
+                        const data = JSON.parse(line);
+                        if (data.viewPoint) {
+                            viewElement.textContent = data.viewPoint;
+                        } else if (data.answers) {
+                            fullContent += data.answers;
+                            contentElement.innerHTML = md.render(fullContent);
+                        } else if (data.error) {
+                            console.error('Stream error:', data.error);
+                            contentElement.innerHTML = `<p class="text-red-500">Error: ${data.error}</p>`;
+                        }
+                    } catch (e) {
+                        console.error('Error parsing stream data:', e, 'line:', line);
+                    }
+                }
             }
         }
-        
+
+        async function startStreaming(theme) {
+            // Clear existing content before streaming starts
+            document.getElementById('view1').textContent = '';
+            document.getElementById('content1').innerHTML = '';
+            document.getElementById('view2').textContent = '';
+            document.getElementById('content2').innerHTML = '';
+            document.getElementById('view3').textContent = '';
+            document.getElementById('content3').innerHTML = '';
+
+            // No loading screen, just stream directly into the content areas
+
+            const fetch1 = fetch(`/stream-proxy?theme=${encodeURIComponent(theme)}`);
+            const fetch2 = fetch(`/stream-proxy?theme=${encodeURIComponent(theme)}`);
+            const fetch3 = fetch(`/stream-proxy?theme=${encodeURIComponent(theme)}`);
+
+            try {
+                const [response1, response2, response3] = await Promise.all([fetch1, fetch2, fetch3]);
+
+                await Promise.all([
+                    processStream(response1, 'view1', 'content1'),
+                    processStream(response2, 'view2', 'content2'),
+                    processStream(response3, 'view3', 'content3')
+                ]);
+
+            } catch (error) {
+                console.error('Streaming failed:', error);
+                // Display error in content areas if streaming fails
+                document.getElementById('content1').innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
+                document.getElementById('content2').innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
+                document.getElementById('content3').innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
+            } finally {
+                // No loading screen to hide
+            }
+        }
+
+        // Removed loading animation functions and TreePlugin code
+
     </script>
 </body>
 </html>

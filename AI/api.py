@@ -5,11 +5,12 @@ import random
 import time
 from fastapi import FastAPI,Request
 from fastapi.middleware.cors import CORSMiddleware
-# from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse
 from typing import Union
 import random
 import csv
 import time
+import json
 
 
 
@@ -134,20 +135,34 @@ def ream():
     return {"hello":"hefoe:fjiojf;oaejwfioewjf;ioe",
             "unhello":viewPoint}
 
+async def stream_generator(prompt_input: str, view_point: str):
+    """
+    Streams the AI response. First yields the viewpoint, then the answer chunks.
+    """
+    # 1. Yield the viewpoint
+    yield json.dumps({"viewPoint": view_point}) + "\n"
+    
+    # 2. Stream the answer
+    for chunk in IdeaAPI.Outputs_custom_stream(prompt_input):
+        yield json.dumps({"answers": chunk}) + "\n"
+
 # api出力
 @app.get("/inference/type/{type_value}")
-def read_item(type_value: str, c: Union[str, None] = None):
+async def read_item(type_value: str, c: Union[str, None] = None):
     if type_value == "theme":
-            v = viewPoint[random.randint(0,len(viewPoint)-1)]
-            promptInput = Loadquestion.makeQuestion(v, c)
-            print(promptInput)
-            # return "hete"
-            answer =IdeaAPI.Outputs_custom(promptInput)
-            # return StreamingResponse(IdeaAPI.Outputs_custom(promptInput))
-            return {"answers":answer,"viewPoint":v}
+        v = viewPoint[random.randint(0, len(viewPoint) - 1)]
+        promptInput = Loadquestion.makeQuestion(v, c)
+        print(promptInput)
+        return StreamingResponse(stream_generator(promptInput, v), media_type="application/x-ndjson")
 
-
+    # Fallback for non-streaming for other types or as a backup
+    elif type_value == "theme_no_stream":
+        v = viewPoint[random.randint(0,len(viewPoint)-1)]
+        promptInput = Loadquestion.makeQuestion(v, c)
+        print(promptInput)
+        answer = IdeaAPI.Outputs_custom(promptInput)
+        return {"answers": answer, "viewPoint": v}
 
     # 例外処理
     else:
-        return {"ERROR":"NotFound"}
+        return {"ERROR": "NotFound"}
